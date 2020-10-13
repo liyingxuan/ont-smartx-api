@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Laravel\Passport\Passport;
+use App\Foundation\Auth\SmartxEloquentUserProvider;
+
+class AuthServiceProvider extends ServiceProvider
+{
+    /**
+     * The policy mappings for the application.
+     *
+     * @var array
+     */
+    protected $policies = [
+        'App\Model' => 'App\Policies\ModelPolicy',
+    ];
+
+    /**
+     * Register any authentication / authorization services.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        $this->registerPolicies();
+
+        \Auth::provider('smartx-eloquent', function ($app, $config) {
+            return new SmartxEloquentUserProvider($this->app['hash'], $config['model']);
+        });
+
+        Passport::routes();
+
+        Passport::tokensExpireIn(now()->addDays(1)); // 1天过期，然后去refresh token
+
+        Passport::refreshTokensExpireIn(now()->addDays(30)); // 30天后过期，需要重新登录；和./app/Http/Proxy/TokenProxy.php中的cookie分钟对应
+    }
+}
